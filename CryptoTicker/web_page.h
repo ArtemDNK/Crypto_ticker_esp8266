@@ -70,7 +70,7 @@ button{width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font
 </div><div id="toast" class="toast"></div>
 <script>
 const $=id=>document.getElementById(id);
-const APIS=['https://data-api.binance.vision','https://api.binance.com'];
+const APIS=['https://api.bybit.com','https://api.bytick.com'];
 const FALLBACK=['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','AVAX','DOT','POL','LINK','LTC','UNI','ATOM','SHIB','PEPE','ARB','OP','SUI','APT','INJ','TIA','FET','WLD','TON','NEAR','S','ALGO','XLM','SAND','MANA','AXS','GALA','APE','FLOKI','BONK','WIF','RENDER','JUP','SEI','STRK','PYTH','ENA','TRX','BCH','HBAR','AAVE'];
 let all=[],sel='',toastT;
 
@@ -81,11 +81,12 @@ function post(u,d){const f=new URLSearchParams(d);return tfetch(u,{method:'POST'
 async function loadCoins(){
   for(const api of APIS){
     try{
-      const d=await (await tfetch(api+'/api/v3/ticker/price',{},8000)).json();
+      const d=await (await tfetch(api+'/v5/market/tickers?category=spot',{},8000)).json();
+      if(d.retCode!==0)throw 0;
       const set=new Set();
-      d.forEach(i=>{if(i.symbol.endsWith('USDT')&&i.symbol.length>4)set.add(i.symbol.slice(0,-4))});
+      d.result.list.forEach(i=>{if(i.symbol.endsWith('USDT')&&i.symbol.length>4)set.add(i.symbol.slice(0,-4))});
       all=[...set].sort();
-      $('note').textContent='Loaded '+all.length+' USDT pairs from Binance';
+      $('note').textContent='Loaded '+all.length+' USDT pairs from Bybit';
       break;
     }catch(e){}
   }

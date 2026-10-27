@@ -1,6 +1,6 @@
 /*
   Crypto Ticker — ESP8266 + LCD1602/2004 I2C
-  Shows a Binance spot price (USDT pair) with 24h change on a character LCD.
+  Shows a Bybit spot price (USDT pair) with 24h change on a character LCD.
   WiFi and coin are configured from a built-in web page.
 
   https://github.com/ArtemDNK/Crypto_ticker_esp8266
@@ -21,14 +21,14 @@
 #include "lcd_compat.h"
 
 // ====================== Configuration ======================
-#define FW_VERSION "4.0"
+#define FW_VERSION "4.1"
 
 static const char AP_SSID[]   = "CryptoTicker";
 static const char AP_PASS[]   = "12345678";      // >= 8 chars, change it!
 static const char HOSTNAME[]  = "cryptoticker";  // http://cryptoticker.local
 
-// Market-data-only mirror first (lighter, not geo-blocked as often), then main API.
-static const char* const API_HOSTS[] = { "data-api.binance.vision", "api.binance.com" };
+// Bybit v5 public API; api.bytick.com is Bybit's official alternative domain.
+static const char* const API_HOSTS[] = { "api.bybit.com", "api.bytick.com" };
 constexpr uint8_t  API_HOST_COUNT        = sizeof(API_HOSTS) / sizeof(API_HOSTS[0]);
 
 constexpr uint32_t PRICE_INTERVAL_MS     = 5000;    // between price requests
@@ -285,12 +285,13 @@ void handleWifi() {
   }
 }
 
-// ====================== Binance ======================
+// ====================== Bybit ======================
 // Synchronous request with short timeouts; the async web server keeps working
 // meanwhile because WiFiClient waits with yield().
-// httpCode: 0 = connection failed, -1 = bad response, otherwise HTTP status.
-bool fetchTicker(const char* host, double& last, double& open, int& httpCode) {
-  httpCode = 0;
+// code: 0 = connection failed, -1 = bad response, -2 = API error,
+//       400 = unknown symbol, otherwise HTTP status.
+bool fetchTicker(const char* host, double& last, double& open, int& code) {
+  code = 0;
 
   // A 1 KB receive buffer instead of the default 16 KB saves ~15 KB of heap,
   // but only if the server supports TLS Max Fragment Length. Probe once per host.
@@ -306,10 +307,9 @@ bool fetchTicker(const char* host, double& last, double& open, int& httpCode) {
   if (!tls.connect(host, 443)) return false;
 
   // HTTP/1.0 => no chunked encoding, plain body we can stream into the parser.
-  // type=MINI returns a small object with lastPrice and openPrice (24h ago).
   char req[200];
   int len = snprintf_P(req, sizeof(req),
-      PSTR("GET /api/v3/ticker/24hr?type=MINI&symbol=%s HTTP/1.0\r\n"
+      PSTR("GET /v5/market/tickers?category=spot&symbol=%s HTTP/1.0\r\n"
            "Host: %s\r\nUser-Agent: CryptoTicker/" FW_VERSION "\r\nConnection: close\r\n\r\n"),
       settings.symbol, host);
   tls.write((const uint8_t*)req, len);
@@ -318,27 +318,41 @@ bool fetchTicker(const char* host, double& last, double& open, int& httpCode) {
   size_t n = tls.readBytesUntil('\n', line, sizeof(line) - 1);
   line[n] = '\0';
   const char* sp = strchr(line, ' ');
-  httpCode = sp ? atoi(sp + 1) : -1;
-  if (httpCode <= 0) httpCode = -1;
+  code = sp ? atoi(sp + 1) : -1;
+  if (code <= 0) code = -1;
 
-  if (httpCode != 200 || !tls.find("\r\n\r\n")) {
+  if (code != 200 || !tls.find("\r\n\r\n")) {
     tls.stop();
     return false;
   }
 
+  // {"retCode":0,"result":{"list":[{"lastPrice":"..","prevPrice24h":"..","price24hPcnt":"0.0123",...}]}}
   JsonDocument filter;
-  filter["lastPrice"] = true;
-  filter["openPrice"] = true;
+  filter["retCode"] = true;
+  JsonObject f = filter["result"]["list"][0].to<JsonObject>();
+  f["lastPrice"]    = true;
+  f["prevPrice24h"] = true;
+  f["price24hPcnt"] = true;
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, tls, DeserializationOption::Filter(filter));
   tls.stop();
-  if (err) { httpCode = -1; return false; }
+  if (err) { code = -1; return false; }
 
-  const char* lp = doc["lastPrice"];
-  const char* op = doc["openPrice"];
-  if (!lp) { httpCode = -1; return false; }
+  int ret = doc["retCode"] | -1;
+  JsonObject t = doc["result"]["list"][0];
+  if (ret == 10001 || (ret == 0 && t.isNull())) { code = 400; return false; }  // no such symbol
+  if (ret != 0) { code = -2; return false; }
+
+  const char* lp = t["lastPrice"];
+  if (!lp) { code = -1; return false; }
   last = strtod(lp, nullptr);
-  open = op ? strtod(op, nullptr) : NAN;
+
+  // 24h-ago price; if absent, derive it from the fractional change (0.0123 = +1.23%)
+  const char* pp = t["prevPrice24h"];
+  const char* pc = t["price24hPcnt"];
+  open = NAN;
+  if (pp) open = strtod(pp, nullptr);
+  else if (pc) open = last / (1.0 + strtod(pc, nullptr));
   return last > 0;
 }
 
@@ -362,6 +376,7 @@ void updatePrice() {
     else if (code == 451 || code == 403)
                           snprintf(lastError, sizeof(lastError), "Blocked: %d", code);
     else if (code > 0)    snprintf(lastError, sizeof(lastError), "HTTP error %d", code);
+    else if (code == -2)  strlcpy(lastError, "API error", sizeof(lastError));
     else if (code == 0)   strlcpy(lastError, "No connection", sizeof(lastError));
     else                  strlcpy(lastError, "Bad response", sizeof(lastError));
     Serial.printf_P(PSTR("Fetch failed (%s): %s\n"), API_HOSTS[apiHost], lastError);
