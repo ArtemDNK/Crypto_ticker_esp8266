@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 400" width="860" height="400" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="860" height="400" rx="14" fill="#f6f7f9"/>
+  <text x="430" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">Crypto Ticker — wiring</text>
+
+  <!-- ESP8266 board -->
+  <rect x="40" y="70" width="230" height="290" rx="10" fill="#1d2b4a"/>
+  <rect x="95" y="90" width="120" height="70" rx="4" fill="#9aa4b2"/>
+  <text x="155" y="122" text-anchor="middle" font-size="13" fill="#1d2b4a" font-weight="700">ESP-12F</text>
+  <text x="155" y="140" text-anchor="middle" font-size="11" fill="#1d2b4a">ESP8266</text>
+  <text x="155" y="190" text-anchor="middle" font-size="15" fill="#fff" font-weight="700">NodeMCU v2/v3</text>
+  <text x="155" y="210" text-anchor="middle" font-size="13" fill="#c9d1d9">or Wemos D1 mini</text>
+  <rect x="125" y="330" width="60" height="22" rx="3" fill="#6e7781"/>
+  <text x="155" y="346" text-anchor="middle" font-size="11" fill="#fff">USB</text>
+
+  <!-- board pins -->
+  <g font-size="13" fill="#fff" text-anchor="end">
+    <text x="252" y="245">GND</text>
+    <text x="252" y="270">VIN / 5V</text>
+    <text x="252" y="295">D2 (GPIO4)</text>
+    <text x="252" y="320">D1 (GPIO5)</text>
+  </g>
+  <g fill="#e3b341">
+    <circle cx="262" cy="241" r="5"/><circle cx="262" cy="266" r="5"/>
+    <circle cx="262" cy="291" r="5"/><circle cx="262" cy="316" r="5"/>
+  </g>
+
+  <!-- wires -->
+  <g stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M262 241 H420 V171 H560" stroke="#24292f"/>
+    <path d="M262 266 H440 V196 H560" stroke="#cf222e"/>
+    <path d="M262 291 H460 V221 H560" stroke="#1a7f37"/>
+    <path d="M262 316 H480 V246 H560" stroke="#0969da"/>
+  </g>
+  <g font-size="12" font-weight="600">
+    <text x="300" y="234" fill="#24292f">GND</text>
+    <text x="300" y="259" fill="#cf222e">+5V</text>
+    <text x="300" y="284" fill="#1a7f37">SDA</text>
+    <text x="300" y="309" fill="#0969da">SCL</text>
+  </g>
+
+  <!-- PCF8574 backpack -->
+  <rect x="560" y="150" width="70" height="115" rx="6" fill="#2d6a2d"/>
+  <g font-size="12" fill="#fff">
+    <text x="578" y="175">GND</text><text x="578" y="200">VCC</text>
+    <text x="578" y="225">SDA</text><text x="578" y="250">SCL</text>
+  </g>
+  <g fill="#e3b341">
+    <circle cx="566" cy="171" r="4"/><circle cx="566" cy="196" r="4"/>
+    <circle cx="566" cy="221" r="4"/><circle cx="566" cy="246" r="4"/>
+  </g>
+  <text x="592" y="285" text-anchor="middle" font-size="11" fill="#57606a">PCF8574</text>
+  <text x="592" y="299" text-anchor="middle" font-size="11" fill="#57606a">0x27/0x3F</text>
+
+  <!-- LCD -->
+  <rect x="630" y="110" width="200" height="200" rx="8" fill="#2f6f3a"/>
+  <rect x="645" y="160" width="170" height="78" rx="4" fill="#1f3fbf"/>
+  <g font-family="Consolas, Menlo, monospace" font-size="16" fill="#dfe8ff">
+    <text x="655" y="190">BTC/USDT    ↑</text>
+    <text x="655" y="222">$67123 +1.23%</text>
+  </g>
+  <text x="730" y="140" text-anchor="middle" font-size="14" fill="#fff" font-weight="700">LCD 1602</text>
+  <text x="730" y="268" text-anchor="middle" font-size="11" fill="#d0e8d4">contrast: blue trimpot</text>
+  <text x="730" y="284" text-anchor="middle" font-size="11" fill="#d0e8d4">on the backpack</text>
+
+  <text x="430" y="385" text-anchor="middle" font-size="12" fill="#57606a">Powered from USB. If the LCD is blank: turn the contrast trimpot; check address in Serial Monitor.</text>
+</svg>
